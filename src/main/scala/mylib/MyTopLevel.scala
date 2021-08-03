@@ -23,45 +23,111 @@ import spinal.lib._
 
 import scala.util.Random
 
+
 //Hardware definition
+trait FFIO {
+  val io: Bundle
+}
+
+
+case class PCI() extends Component with FFIO {
+  val io = new Bundle {
+    val ce = in Bool()
+    val pc = in UInt (32 bits)
+  }
+
+  val regt = RegInit(False)
+  val pcpc = RegInit(U"32'b0")
+  regt := io.ce
+  pcpc := io.pc
+}
+
+case class Opcode() extends SpinalEnum {
+}
+
+case class Alu() extends Bundle {
+  val op = AluOp()
+  val sel = AluSel()
+}
+
+
+case class RegFile() extends Bundle with IMasterSlave {
+  val en = Bool()
+  val addr = UInt(5 bits)
+  val data = Bits(32 bits)
+
+  override def asMaster() {
+    out(en, addr)
+    in(data)
+  }
+}
+
+case class MiddleWare(bundle1: Bundle, bundle2: Bundle) extends Component {
+  val io = new Bundle {
+    val in = bundle1
+    val out = bundle2
+  }
+  println(io.in)
+  println(io.out)
+  val horay = new Alu {
+
+
+  }
+  //  io.in <> io.out
+}
+
+
 class MyTopLevel extends Component {
   val io = new Bundle {
-    val cond0 = in  Bool
-    val cond1 = in  Bool
-    val flag  = out Bool
-    val state = out UInt(8 bits)
-  }
-  val counter = Reg(UInt(8 bits)) init(0)
-
-  when(io.cond0){
-    counter := counter + 1
+    val cond1 = in Bool
+    val flag = out Bool
   }
 
-  io.state := counter
-  io.flag  := (counter === 0) | io.cond1
+  io.flag := io.cond1
+
+  val pc1 = new PC
+  val pc2 = new PCI
+
+  //  pc1.io <> pc2.io
+  println(pc1.io.getComponents())
+  println(pc2.io)
+  pc2.io := RegNext(pc2.io)
+  val midw = new MiddleWare(pc1.io, pc2.io)
+  //  midw.io.in <> pc1.io
+  //  midw.io.out <> pc2.io
 }
 
 //Generate the MyTopLevel's Verilog
 object MyTopLevelVerilog {
   def main(args: Array[String]) {
-    SpinalVerilog(new MyTopLevel)
+    MySpinalConfig.generateVerilog(new ID).printPruned()
   }
 }
-
-//Generate the MyTopLevel's VHDL
-object MyTopLevelVhdl {
-  def main(args: Array[String]) {
-    SpinalVhdl(new MyTopLevel)
-  }
-}
-
 
 //Define a custom SpinalHDL configuration with synchronous reset instead of the default asynchronous one. This configuration can be resued everywhere
-object MySpinalConfig extends SpinalConfig(defaultConfigForClockDomains = ClockDomainConfig(resetKind = SYNC))
+object MySpinalConfig extends SpinalConfig(
+  defaultConfigForClockDomains = ClockDomainConfig(resetKind = SYNC)
+)
 
-//Generate the MyTopLevel's Verilog using the above custom configuration.
-object MyTopLevelVerilogWithCustomConfig {
-  def main(args: Array[String]) {
-    MySpinalConfig.generateVerilog(new MyTopLevel)
+class Point(var x: Int, var y: Int) {
+
+  def move(dx: Int, dy: Int): Unit = {
+    x = x + x
+    y = y + dy
+  }
+
+  def moveone() {
+    move(1,2)
+  }
+
+  override def toString =
+    s"($x, $y)"
+}
+
+
+object LetsTest {
+  def main(args: Array[String]): Unit = {
+    val horay = new Point(10,21)
+    horay.moveone()
   }
 }

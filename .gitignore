@@ -38,7 +38,8 @@ bin/
 *.vcd
 !tester/src/test/resources/*.vhd
 
-
 simWorkspace/
 tmp/
 null
+.bloop
+.bsp

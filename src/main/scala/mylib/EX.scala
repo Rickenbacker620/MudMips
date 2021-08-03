@@ -1,0 +1,5 @@
+package mylib
+
+class EX {
+
+}
