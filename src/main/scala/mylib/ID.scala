@@ -33,6 +33,17 @@ object MipsInsts {
 }
 
 
+object AluOp extends SpinalEnum(binarySequential){
+  val OR_OP, AND_OP, LUI_OP,
+  SLL_OP, SRL_OP, SRA_OP, ADD_OP, NOP_OP,
+  JAL_OP, BNE_OP, LW_OP, SW_OP = newElement()
+}
+
+object AluSel extends SpinalEnum(binarySequential) {
+  val RES_LOGIC, RES_SHIFT, RES_ARITH, RES_NOP, RES_JUMP, RES_LOAD_STORE = newElement()
+}
+
+
 object InstKind extends Enumeration {
   type InstKind = Value
   val I_TYPE, J_TYPE, R_TYPE = Value
@@ -164,7 +175,7 @@ class IDPorts extends Bundle {
   val inst = in(Bits(32 bits))
   val alu = out(Alu())
   val rregs = Vec(master(RegFile()), 2)
-  val wreg = master(RegFile())
+  val wreg = out(RegFile())
   val oprd = out(Vec(Bits(32 bits), 2))
 }
 

@@ -21,30 +21,6 @@ package mylib
 import spinal.core._
 import spinal.lib._
 
-import scala.util.Random
-
-
-//Hardware definition
-trait FFIO {
-  val io: Bundle
-}
-
-
-case class PCI() extends Component with FFIO {
-  val io = new Bundle {
-    val ce = in Bool()
-    val pc = in UInt (32 bits)
-  }
-
-  val regt = RegInit(False)
-  val pcpc = RegInit(U"32'b0")
-  regt := io.ce
-  pcpc := io.pc
-}
-
-case class Opcode() extends SpinalEnum {
-}
-
 case class Alu() extends Bundle {
   val op = AluOp()
   val sel = AluSel()
@@ -79,28 +55,34 @@ case class MiddleWare(bundle1: Bundle, bundle2: Bundle) extends Component {
 
 class MyTopLevel extends Component {
   val io = new Bundle {
-    val cond1 = in Bool
-    val flag = out Bool
+    val rom_ce = out Bool()
+    val rom_addr = out UInt (32 bits)
+    val rom_data = in Bits(32 bits)
   }
+  val pc = new PC
+  val id = new ID
+  val ex = new EX
+  val regfiles=  new RegFiles
+  val mem = new MEM
+//  val wb = new WB
 
-  io.flag := io.cond1
+  io.rom_ce := pc.io.ce
+  io.rom_addr := pc.io.pc
+  id.io.inst := io.rom_data
+  id.io.rregs <> regfiles.io.rregs
+  id.io.oprd <> ex.io.oprd
+  id.io.alu <> ex.io.alu
+  id.io.wreg <> ex.io.wreg_in
 
-  val pc1 = new PC
-  val pc2 = new PCI
+  ex.io.wreg_out <> mem.io.wreg_in
 
-  //  pc1.io <> pc2.io
-  println(pc1.io.getComponents())
-  println(pc2.io)
-  pc2.io := RegNext(pc2.io)
-  val midw = new MiddleWare(pc1.io, pc2.io)
-  //  midw.io.in <> pc1.io
-  //  midw.io.out <> pc2.io
+  regfiles.io.wreg <> ex.io.wreg_out
 }
 
 //Generate the MyTopLevel's Verilog
 object MyTopLevelVerilog {
   def main(args: Array[String]) {
-    MySpinalConfig.generateVerilog(new ID).printPruned()
+    MySpinalConfig.generateVerilog(new MyTopLevel).printPruned()
   }
 }
 
@@ -117,7 +99,7 @@ class Point(var x: Int, var y: Int) {
   }
 
   def moveone() {
-    move(1,2)
+    move(1, 2)
   }
 
   override def toString =
@@ -127,7 +109,7 @@ class Point(var x: Int, var y: Int) {
 
 object LetsTest {
   def main(args: Array[String]): Unit = {
-    val horay = new Point(10,21)
+    val horay = new Point(10, 21)
     horay.moveone()
   }
 }
